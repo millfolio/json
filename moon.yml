@@ -1,0 +1,9 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+layer: 'library'
+tags: ['mojo']
+
+tasks:
+  check:
+    command: 'pixi run mojo -I . tests/test_value.mojo'
+    toolchain: 'system'
+    inputs: ['json/**/*.mojo', 'tests/**/*.mojo', 'pixi.toml', 'pixi.lock']

@@ -58,6 +58,13 @@ struct OwnedValue(Copyable, Movable):
     var object_keys: List[String]
     var object_values: List[OwnedValue]
 
+    # Self-referential fields (`List[OwnedValue]`) make implicit-deletability
+    # inference recursive; an explicit (trivial) destructor breaks the cycle so
+    # the type conforms to ImplicitlyDeletable. Fields are still auto-destroyed
+    # at end of scope. Required as of mojo dev2026062706.
+    def __del__(deinit self):
+        pass
+
     def __init__(out self):
         self.kind = 0
         self.bool_val = False

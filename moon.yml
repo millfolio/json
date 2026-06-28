@@ -3,7 +3,9 @@ layer: 'library'
 tags: ['mojo']
 
 tasks:
+  # Full deterministic CPU suite (tests-cpu) — GPU tests are excluded so this runs
+  # on machines without a Metal/GPU toolchain (the pre-push gate must be portable).
   check:
-    command: 'pixi run mojo -I . tests/test_value.mojo'
+    command: 'pixi run tests-cpu'
     toolchain: 'system'
-    inputs: ['json/**/*.mojo', 'tests/**/*.mojo', 'pixi.toml', 'pixi.lock']
+    inputs: ['json/**/*.mojo', 'tests/**/*.mojo', 'examples/**/*.mojo', 'pixi.toml', 'pixi.lock']

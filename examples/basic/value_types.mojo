@@ -56,7 +56,9 @@ def main() raises:
     # Value extraction
     print("Extracting values:")
 
-    var data = loads('{"name": "Alice", "age": 30, "score": 95.5, "active": true}')
+    var data = loads(
+        '{"name": "Alice", "age": 30, "score": 95.5, "active": true}'
+    )
     # Note: The current API stores arrays/objects as raw JSON strings
     # To extract individual fields, you would parse them separately
 

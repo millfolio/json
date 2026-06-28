@@ -9,7 +9,8 @@ from std.os import remove
 def main() raises:
     # Create a sample JSON file
     var sample_data = loads(
-        '{"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}], "total": 2}'
+        '{"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],'
+        ' "total": 2}'
     )
 
     # Write JSON to file using dump()
@@ -28,7 +29,9 @@ def main() raises:
 
     # Process a larger JSON structure
     var config = loads(
-        '{"app": {"name": "MyApp", "version": "1.0.0", "debug": false}, "database": {"host": "localhost", "port": 5432, "name": "mydb"}, "features": ["auth", "logging", "cache"]}'
+        '{"app": {"name": "MyApp", "version": "1.0.0", "debug": false},'
+        ' "database": {"host": "localhost", "port": 5432, "name": "mydb"},'
+        ' "features": ["auth", "logging", "cache"]}'
     )
 
     print("Writing config to 'config.json'...")

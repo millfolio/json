@@ -25,6 +25,7 @@ from .document import (
     TAPE_TAG_OBJECT,
 )
 from .types import JSONInput, JSONResult
+
 # GPU backend decoupled in this CPU-only build (nightly port). The json/gpu
 # module needs the new DeviceContext.enqueue API migrated before it can be
 # re-enabled. See README port notes.
@@ -282,7 +283,9 @@ def loads[target: StaticString = "cpu"](s: String) raises -> Value:
     elif target == "cpu-simdjson":
         return _parse_cpu["simdjson"](s)
     elif target == "gpu":
-        comptime assert False, "GPU target disabled in this CPU-only build of json"
+        comptime assert (
+            False
+        ), "GPU target disabled in this CPU-only build of json"
     else:
         return _parse_cpu["mojo"](s)
 

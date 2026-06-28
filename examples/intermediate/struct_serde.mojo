@@ -6,11 +6,17 @@ for your structs to enable clean serialize/deserialize functions.
 
 from json import loads, Value
 from json.serialize import Serializable, serialize, to_json_value
-from json.deserialize import Deserializable, deserialize, get_string, get_int, get_bool
+from json.deserialize import (
+    Deserializable,
+    deserialize,
+    get_string,
+    get_int,
+    get_bool,
+)
 
 
 @fieldwise_init
-struct Person(Serializable, Deserializable, Copyable, Movable):
+struct Person(Copyable, Deserializable, Movable, Serializable):
     """A person with name, age, and active status.
 
     Implements both Serializable and Deserializable for full round-trip support.
@@ -29,7 +35,7 @@ struct Person(Serializable, Deserializable, Copyable, Movable):
             + to_json_value(self.age)
             + ',"active":'
             + to_json_value(self.active)
-            + '}'
+            + "}"
         )
 
     @staticmethod

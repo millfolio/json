@@ -12,7 +12,7 @@ def main() raises:
     print()
 
     # Sample large JSON document
-    var large_json = '''
+    var large_json = """
     {
         "metadata": {
             "version": "2.0",
@@ -29,7 +29,7 @@ def main() raises:
             "language": "en"
         }
     }
-    '''
+    """
 
     # ==========================================================
     # 1. Create lazy value (no parsing happens yet)

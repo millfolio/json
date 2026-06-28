@@ -43,7 +43,8 @@ def main() raises:
 
     # Nested object
     var nested = loads(
-        '{"user": {"name": "Bob", "scores": [95, 87, 92]}, "timestamp": 1234567890}'
+        '{"user": {"name": "Bob", "scores": [95, 87, 92]}, "timestamp":'
+        " 1234567890}"
     )
     print("  Nested:", dumps(nested))
     print()

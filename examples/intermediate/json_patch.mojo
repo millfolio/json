@@ -89,10 +89,12 @@ def main() raises:
     doc = loads('{"version": 1, "data": "important"}')
 
     # This patch only applies if version == 1
-    patch = loads('''[
+    patch = loads(
+        """[
         {"op": "test", "path": "/version", "value": 1},
         {"op": "replace", "path": "/version", "value": 2}
-    ]''')
+    ]"""
+    )
 
     result = apply_patch(doc, patch)
     print("   Original:", dumps(doc))
@@ -106,11 +108,13 @@ def main() raises:
     print("7. Multiple operations:")
 
     doc = loads('{"user": {"name": "Alice", "role": "user"}}')
-    patch = loads('''[
+    patch = loads(
+        """[
         {"op": "replace", "path": "/user/role", "value": "admin"},
         {"op": "add", "path": "/user/permissions", "value": ["read", "write"]},
         {"op": "add", "path": "/updated", "value": true}
-    ]''')
+    ]"""
+    )
 
     result = apply_patch(doc, patch)
     print("   Original:", dumps(doc))
@@ -151,22 +155,26 @@ def main() raises:
     # ==========================================================
     print("10. Practical example - partial update:")
 
-    var user = loads('''
+    var user = loads(
+        """
     {
         "id": 123,
         "name": "Alice",
         "email": "alice@old.com",
         "settings": {"theme": "light", "notifications": true}
     }
-    ''')
+    """
+    )
 
     # Client sends partial update
-    var update = loads('''
+    var update = loads(
+        """
     {
         "email": "alice@new.com",
         "settings": {"theme": "dark"}
     }
-    ''')
+    """
+    )
 
     var updated = merge_patch(user, update)
     print("   Updated user:")

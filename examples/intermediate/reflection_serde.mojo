@@ -93,7 +93,7 @@ struct Profile(Defaultable, Movable):
 
 
 @fieldwise_init
-struct Color(JsonSerializable, Defaultable, Movable):
+struct Color(Defaultable, JsonSerializable, Movable):
     """Custom serialization: produces "rgb(r,g,b)" instead of an object."""
 
     var r: Int
@@ -135,7 +135,7 @@ struct Stats(Defaultable, Movable):
 
 
 @fieldwise_init
-struct RGBArray(JsonDeserializable, Defaultable, Movable):
+struct RGBArray(Defaultable, JsonDeserializable, Movable):
     """Custom deserialization: reads from a JSON array [r, g, b]."""
 
     var r: Int
@@ -242,9 +242,7 @@ def example_optional_and_list() raises:
     print("With values:", serialize_json(profile))
 
     # Missing optional fields default to None
-    var minimal = deserialize_json[Profile](
-        '{"username":"anon","tags":[]}'
-    )
+    var minimal = deserialize_json[Profile]('{"username":"anon","tags":[]}')
     print(
         "Minimal: username="
         + minimal.username
@@ -364,7 +362,10 @@ def example_combinator_types() raises:
     var back = deserialize_json[Stats](json)
     print("counts.wins =", back.counts["wins"])
     print("labels[0]   =", back.labels[0].value())
-    print("labels[1]   =", "None" if not back.labels[1] else back.labels[1].value())
+    print(
+        "labels[1]   =",
+        "None" if not back.labels[1] else back.labels[1].value(),
+    )
     print(
         "scores[0]   =",
         back.maybe_scores.value()[0] if back.maybe_scores else -1,

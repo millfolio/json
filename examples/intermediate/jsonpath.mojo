@@ -12,7 +12,8 @@ def main() raises:
     print()
 
     # Sample data
-    var data = loads('''
+    var data = loads(
+        """
     {
         "store": {
             "name": "TechMart",
@@ -33,7 +34,8 @@ def main() raises:
             {"name": "Charlie", "age": 35, "active": true}
         ]
     }
-    ''')
+    """
+    )
 
     # ==========================================================
     # 1. Basic path access
@@ -91,7 +93,11 @@ def main() raises:
     var expensive = jsonpath_query(data, "$.store.books[?@.price>30]")
     print("   Books where price>30:", len(expensive), "found")
     for i in range(len(expensive)):
-        print("     -", expensive[i]["title"].string_value(), "$" + String(expensive[i]["price"].float_value()))
+        print(
+            "     -",
+            expensive[i]["title"].string_value(),
+            "$" + String(expensive[i]["price"].float_value()),
+        )
 
     # Filter users
     var active_users = jsonpath_query(data, "$.users[?@.active==true]")

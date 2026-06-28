@@ -34,8 +34,7 @@ comptime DOC: StaticString = """{
 
 
 def target(data: List[UInt8]) raises:
-    """Fuzz target: run an arbitrary path expression against ``DOC``.
-    """
+    """Fuzz target: run an arbitrary path expression against ``DOC``."""
     var path = String(capacity=len(data) + 1)
     for i in range(len(data)):
         path += chr(Int(data[i]))

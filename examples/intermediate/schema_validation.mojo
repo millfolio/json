@@ -28,7 +28,8 @@ def main() raises:
     # ==========================================================
     print("2. Object with required fields:")
 
-    var user_schema = loads('''
+    var user_schema = loads(
+        """
     {
         "type": "object",
         "required": ["name", "email"],
@@ -38,11 +39,16 @@ def main() raises:
             "age": {"type": "integer", "minimum": 0}
         }
     }
-    ''')
+    """
+    )
 
-    var valid_user = loads('{"name": "Alice", "email": "alice@example.com", "age": 30}')
+    var valid_user = loads(
+        '{"name": "Alice", "email": "alice@example.com", "age": 30}'
+    )
     var missing_email = loads('{"name": "Bob"}')
-    var invalid_age = loads('{"name": "Charlie", "email": "c@x.com", "age": -5}')
+    var invalid_age = loads(
+        '{"name": "Charlie", "email": "c@x.com", "age": -5}'
+    )
 
     print("   Complete user valid?", is_valid(valid_user, user_schema))
     print("   Missing email valid?", is_valid(missing_email, user_schema))
@@ -59,7 +65,12 @@ def main() raises:
     if not result.valid:
         print("   Errors:")
         for i in range(len(result.errors)):
-            print("     - Path:", result.errors[i].path, "| Message:", result.errors[i].message)
+            print(
+                "     - Path:",
+                result.errors[i].path,
+                "| Message:",
+                result.errors[i].message,
+            )
     print()
 
     # ==========================================================
@@ -67,13 +78,15 @@ def main() raises:
     # ==========================================================
     print("4. Number constraints:")
 
-    var number_schema = loads('''
+    var number_schema = loads(
+        """
     {
         "type": "number",
         "minimum": 0,
         "maximum": 100
     }
-    ''')
+    """
+    )
 
     print("   Schema: 0 <= number <= 100")
     print("   50 valid?", is_valid(loads("50"), number_schema))
@@ -86,18 +99,23 @@ def main() raises:
     # ==========================================================
     print("5. String constraints:")
 
-    var string_schema = loads('''
+    var string_schema = loads(
+        """
     {
         "type": "string",
         "minLength": 3,
         "maxLength": 10
     }
-    ''')
+    """
+    )
 
     print("   Schema: 3 <= length <= 10")
     print("   'hello' valid?", is_valid(loads('"hello"'), string_schema))
     print("   'hi' valid?", is_valid(loads('"hi"'), string_schema))
-    print("   'verylongstring' valid?", is_valid(loads('"verylongstring"'), string_schema))
+    print(
+        "   'verylongstring' valid?",
+        is_valid(loads('"verylongstring"'), string_schema),
+    )
     print()
 
     # ==========================================================
@@ -105,14 +123,16 @@ def main() raises:
     # ==========================================================
     print("6. Array validation:")
 
-    var array_schema = loads('''
+    var array_schema = loads(
+        """
     {
         "type": "array",
         "items": {"type": "integer"},
         "minItems": 1,
         "maxItems": 5
     }
-    ''')
+    """
+    )
 
     print("   Schema: array of integers, 1-5 items")
     print("   [1,2,3] valid?", is_valid(loads("[1,2,3]"), array_schema))
@@ -125,11 +145,13 @@ def main() raises:
     # ==========================================================
     print("7. Enum values:")
 
-    var enum_schema = loads('''
+    var enum_schema = loads(
+        """
     {
         "enum": ["pending", "active", "completed"]
     }
-    ''')
+    """
+    )
 
     print("   Schema: one of [pending, active, completed]")
     print("   'active' valid?", is_valid(loads('"active"'), enum_schema))
@@ -141,7 +163,8 @@ def main() raises:
     # ==========================================================
     print("8. Schema composition:")
 
-    var composed_schema = loads('''
+    var composed_schema = loads(
+        """
     {
         "allOf": [
             {"type": "object"},
@@ -149,12 +172,18 @@ def main() raises:
             {"properties": {"id": {"type": "integer"}}}
         ]
     }
-    ''')
+    """
+    )
 
     print("   Schema: allOf [object, has id, id is integer]")
     print("   {id: 1} valid?", is_valid(loads('{"id": 1}'), composed_schema))
-    print("   {id: 'a'} valid?", is_valid(loads('{"id": "a"}'), composed_schema))
-    print("   {name: 'x'} valid?", is_valid(loads('{"name": "x"}'), composed_schema))
+    print(
+        "   {id: 'a'} valid?", is_valid(loads('{"id": "a"}'), composed_schema)
+    )
+    print(
+        "   {name: 'x'} valid?",
+        is_valid(loads('{"name": "x"}'), composed_schema),
+    )
     print()
 
     # ==========================================================
@@ -162,7 +191,8 @@ def main() raises:
     # ==========================================================
     print("9. Practical example - API request:")
 
-    var api_schema = loads('''
+    var api_schema = loads(
+        """
     {
         "type": "object",
         "required": ["action", "payload"],
@@ -173,11 +203,16 @@ def main() raises:
         },
         "additionalProperties": false
     }
-    ''')
+    """
+    )
 
-    var good_request = loads('{"action": "create", "payload": {"name": "test"}}')
+    var good_request = loads(
+        '{"action": "create", "payload": {"name": "test"}}'
+    )
     var bad_action = loads('{"action": "invalid", "payload": {}}')
-    var extra_field = loads('{"action": "create", "payload": {}, "extra": true}')
+    var extra_field = loads(
+        '{"action": "create", "payload": {}, "extra": true}'
+    )
 
     print("   Valid request:", is_valid(good_request, api_schema))
     print("   Invalid action:", is_valid(bad_action, api_schema))

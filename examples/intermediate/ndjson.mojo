@@ -45,7 +45,12 @@ def main() raises:
 
     var items = events.array_items()
     for i in range(len(items)):
-        print("   Event:", items[i]["event"].string_value(), "by", items[i]["user"].string_value())
+        print(
+            "   Event:",
+            items[i]["event"].string_value(),
+            "by",
+            items[i]["user"].string_value(),
+        )
     print()
 
     # ==========================================================
@@ -94,6 +99,7 @@ def main() raises:
 
     # Cleanup
     import std.os
+
     std.os.remove("example_data.ndjson")
 
     print("Done!")

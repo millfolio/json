@@ -1159,4 +1159,3 @@ def _field_type_error(field: String, expected: String, got: Value) -> Error:
         + ", got "
         + _type_label(got)
     )
-

@@ -48,7 +48,6 @@ python = ">=3.10"         # Required to host pypi dependencies (gdown)
 make = ">=4.4.1,<5"       # Used by the optional Makefile build path
 git = ">=2"               # For cloning cuJSON (optional, NVIDIA benchmarks only)
 pre-commit = ">=4.2.0,<5"
-mojodoc = { git = "https://github.com/ehsanmok/mojodoc.git", branch = "main" }
 
 [feature.dev.pypi-dependencies]
 gdown = ">=5.0"           # Google Drive CLI for downloading benchmark datasets
@@ -108,8 +107,8 @@ example-gpu        = "mojo -I . examples/advanced/gpu_parsing.mojo"
 examples = "mojo -I . examples/basic/parsing.mojo && mojo -I . examples/basic/file_io.mojo && mojo -I . examples/basic/value_types.mojo && mojo -I . examples/basic/error_handling.mojo && mojo -I . examples/intermediate/reflection_serde.mojo && mojo -I . examples/intermediate/struct_serde.mojo && mojo -I . examples/intermediate/ndjson.mojo && mojo -I . examples/intermediate/jsonpath.mojo && mojo -I . examples/intermediate/schema_validation.mojo && mojo -I . examples/intermediate/json_patch.mojo && mojo -I . examples/advanced/lazy_parsing.mojo && mojo -I . examples/advanced/gpu_parsing.mojo"
 
 # ------------------------------------------------------------------
-# Dev-only tasks: need either the extra `dev`-feature conda deps (mojodoc,
-# pre-commit, gdown, system git) OR `mojo build` -- which in turn needs the
+# Dev-only tasks: need either the extra `dev`-feature conda deps (pre-commit,
+# gdown, system git) OR `mojo build` -- which in turn needs the
 # sysroot_linux-64 >= 2.34 pin that also lives in the dev feature. Run with
 # `pixi run -e dev <task>` (or from a `pixi shell -e dev`). Intentionally
 # unavailable in the default env so a consumer-style `pixi install` stays
@@ -164,10 +163,6 @@ bench-gpu-all = { cmd = "bash -c 'for i in 1 2 3; do for f in benchmark/datasets
 # GPU benchmark vs cuJSON (NVIDIA only, requires manual cuJSON download)
 # First: cd benchmark && git clone https://github.com/AutomataLab/cuJSON.git
 bench-gpu-cujson = { cmd = "bash -c 'F=${1:-benchmark/datasets/twitter.json}; if [ ! -f benchmark/cuJSON/build/cujson_benchmark ]; then echo \"Error: cuJSON not built. Run: pixi run -e dev build-cujson\" && exit 1; fi; echo \"--- cuJSON ---\" && benchmark/cuJSON/build/cujson_benchmark -b \"$F\" && echo && echo \"--- json GPU ---\" && benchmark/build/bench_gpu \"$F\"' --", depends-on = ["build-bench-gpu"] }
-
-# Docs
-docs = "mojodoc ./json --open"
-docs-build = "mojodoc ./json --out-dir target/doc --base-url /json/"
 
 # ------------------------------------------------------------------
 # Fuzz tasks (mozz). Live under `fuzz` env (`pixi run -e fuzz <task>`).

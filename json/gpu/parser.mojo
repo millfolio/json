@@ -180,7 +180,7 @@ def _parse_lean(
     # `_match_brackets_fast` is gone.
     result.structural = extract_positions_gpu_lean(
         ctx,
-        d_structural.unsafe_ptr(),
+        d_structural.unsafe_ptr().as_unsafe_any_origin(),
         total_padded_32,
         size,
     )

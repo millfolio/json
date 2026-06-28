@@ -187,8 +187,8 @@ def _compute_block_prefix_sums(
 
     _compute_block_prefix_sums(
         ctx,
-        d_block_totals_l1.unsafe_ptr(),
-        d_block_prefix_l1.unsafe_ptr(),
+        d_block_totals_l1.unsafe_ptr().as_unsafe_any_origin(),
+        d_block_prefix_l1.unsafe_ptr().as_unsafe_any_origin(),
         num_blocks_l1,
     )
 
@@ -256,8 +256,8 @@ def extract_positions_gpu_lean(
 
         _compute_block_prefix_sums(
             ctx,
-            d_block_totals.unsafe_ptr(),
-            d_block_prefix.unsafe_ptr(),
+            d_block_totals.unsafe_ptr().as_unsafe_any_origin(),
+            d_block_prefix.unsafe_ptr().as_unsafe_any_origin(),
             num_blocks,
         )
 

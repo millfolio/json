@@ -79,8 +79,8 @@ comptime _OPT_LIST_STRING_NAME = reflect[Optional[List[String]]].name()
 comptime _LIST_LIST_INT_NAME = reflect[List[List[Int]]].name()
 comptime _LIST_LIST_STRING_NAME = reflect[List[List[String]]].name()
 
-comptime _Base = ImplicitlyDestructible & Movable
-comptime _JsonStruct = Defaultable & Movable & ImplicitlyDestructible
+comptime _Base = ImplicitlyDeletable & Movable
+comptime _JsonStruct = Defaultable & Movable & ImplicitlyDeletable
 
 
 # ===================================================================

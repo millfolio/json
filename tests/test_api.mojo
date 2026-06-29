@@ -264,12 +264,12 @@ def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
 
     # Cleanup
-    import os
+    from std.os import remove
 
     try:
-        os.remove("test_api.json")
-        os.remove("test_api.ndjson")
-        os.remove("test_api_gpu.ndjson")
-        os.remove("test_api_stream.ndjson")
+        remove("test_api.json")
+        remove("test_api.ndjson")
+        remove("test_api_gpu.ndjson")
+        remove("test_api_stream.ndjson")
     except:
         pass

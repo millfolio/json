@@ -23,7 +23,7 @@ def test_stream_compact_simple() raises:
     ctx.synchronize()
 
     var positions = extract_positions_gpu_lean(
-        ctx, d_bitmap.unsafe_ptr(), num_words, 32
+        ctx, d_bitmap.unsafe_ptr().as_unsafe_any_origin(), num_words, 32
     )
 
     assert_equal(len(positions), 2)
@@ -51,7 +51,7 @@ def test_stream_compact_multiple_words() raises:
     ctx.synchronize()
 
     var positions = extract_positions_gpu_lean(
-        ctx, d_bitmap.unsafe_ptr(), num_words, 100
+        ctx, d_bitmap.unsafe_ptr().as_unsafe_any_origin(), num_words, 100
     )
 
     assert_equal(len(positions), 3)
@@ -80,7 +80,7 @@ def test_stream_compact_empty() raises:
     ctx.synchronize()
 
     var positions = extract_positions_gpu_lean(
-        ctx, d_bitmap.unsafe_ptr(), num_words, 128
+        ctx, d_bitmap.unsafe_ptr().as_unsafe_any_origin(), num_words, 128
     )
 
     assert_equal(len(positions), 0)
@@ -103,7 +103,7 @@ def test_stream_compact_all_set() raises:
     ctx.synchronize()
 
     var positions = extract_positions_gpu_lean(
-        ctx, d_bitmap.unsafe_ptr(), num_words, 32
+        ctx, d_bitmap.unsafe_ptr().as_unsafe_any_origin(), num_words, 32
     )
 
     assert_equal(len(positions), 32)
@@ -135,7 +135,7 @@ def test_stream_compact_large() raises:
     ctx.synchronize()
 
     var positions = extract_positions_gpu_lean(
-        ctx, d_bitmap.unsafe_ptr(), num_words, max_pos
+        ctx, d_bitmap.unsafe_ptr().as_unsafe_any_origin(), num_words, max_pos
     )
 
     assert_equal(len(positions), 1024)

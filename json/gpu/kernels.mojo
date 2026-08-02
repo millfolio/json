@@ -62,8 +62,8 @@ def fused_json_kernel(
     output_structural: UnsafePointer[UInt32, MutAnyOrigin],
     output_open_close: UnsafePointer[UInt32, MutAnyOrigin],
     quote_prefix_in: UnsafePointer[UInt32, MutAnyOrigin],
-    size: UInt,
-    total_padded_32: UInt,
+    size: UInt32,
+    total_padded_32: UInt32,
 ):
     """Walk 32 input bytes per thread; emit raw `{}[]:,` and `{}[]` bitmaps.
 
@@ -116,7 +116,7 @@ def fused_json_kernel(
         if pos >= Int(size):
             break
 
-        var c = input_data[pos]
+        var c = input_data[unsafe_offset=pos]
         var bit_mask = UInt32(1) << UInt32(j)
 
         var is_op = (
@@ -140,7 +140,7 @@ def fused_json_kernel(
     # Read-and-discard the (unused) quote_prefix_in argument so the
     # buffer binding survives Metal AOT alias analysis. See file-top
     # docstring + parser.mojo `d_quote_dummy` comment.
-    _ = quote_prefix_in[global_id]
+    _ = quote_prefix_in[unsafe_offset=global_id]
 
-    output_structural[global_id] = op_bits
-    output_open_close[global_id] = open_close_bits
+    output_structural[unsafe_offset=global_id] = op_bits
+    output_open_close[unsafe_offset=global_id] = open_close_bits

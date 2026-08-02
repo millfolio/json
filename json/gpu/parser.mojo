@@ -37,7 +37,7 @@ from std.gpu.host import DeviceContext, DeviceBuffer, HostBuffer
 from std.gpu import block_dim, block_idx, thread_idx, barrier, global_idx
 from std.gpu.globals import MAX_THREADS_PER_BLOCK_METADATA
 from std.collections import List
-from std.memory import UnsafePointer, memcpy
+from std.memory import UnsafePointer, unsafe_memcpy
 from std.math import ceildiv
 from std.sys import has_accelerator
 from std.time import perf_counter_ns
@@ -84,7 +84,9 @@ def parse_json_gpu(
     var t0 = perf_counter_ns()
     var d_input = ctx.enqueue_create_buffer[DType.uint8](size)
     var h_input = ctx.enqueue_create_host_buffer[DType.uint8](size)
-    memcpy(dest=h_input.unsafe_ptr(), src=input.data.unsafe_ptr(), count=size)
+    unsafe_memcpy(
+        dest=h_input.unsafe_ptr(), src=input.data.unsafe_ptr(), count=size
+    )
     ctx.enqueue_copy(d_input, h_input)
 
     return _parse_lean(ctx, d_input, size, total_padded_32, t0, verbose)
@@ -129,10 +131,10 @@ def parse_json_gpu_from_pinned(
 
 def _parse_lean(
     ctx: DeviceContext,
-    d_input: DeviceBuffer[DType.uint8],
+    mut d_input: DeviceBuffer[DType.uint8],
     size: Int,
     total_padded_32: Int,
-    t0: UInt,
+    t0: Int,
     verbose: Bool,
 ) raises -> JSONResult:
     """Lean kernel + extract. Single fused kernel launch (raw
@@ -164,8 +166,8 @@ def _parse_lean(
         d_structural.unsafe_ptr(),
         d_open_close.unsafe_ptr(),
         d_quote_dummy.unsafe_ptr(),
-        UInt(size),
-        UInt(total_padded_32),
+        UInt32(size),
+        UInt32(total_padded_32),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )

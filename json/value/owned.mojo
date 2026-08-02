@@ -62,7 +62,7 @@ struct OwnedValue(Copyable, Movable):
     # inference recursive; an explicit (trivial) destructor breaks the cycle so
     # the type conforms to ImplicitlyDeletable. Fields are still auto-destroyed
     # at end of scope. Required as of mojo dev2026062706.
-    def __del__(deinit self):
+    def __deinit__(deinit self):
         pass
 
     def __init__(out self):

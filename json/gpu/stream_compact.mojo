@@ -17,7 +17,7 @@ from std.gpu import block_dim, block_idx, thread_idx, barrier
 from std.gpu.globals import MAX_THREADS_PER_BLOCK_METADATA
 from std.gpu.primitives import block
 from std.collections import List
-from std.memory import UnsafePointer, memcpy
+from std.memory import UnsafePointer, unsafe_memcpy
 from std.math import ceildiv
 from std.utils.static_tuple import StaticTuple
 
@@ -33,13 +33,13 @@ from .kernels import popcount_fast, BLOCK_SIZE_OPT
 def popcount_kernel(
     bitmap: UnsafePointer[UInt32, MutAnyOrigin],
     popcounts: UnsafePointer[UInt32, MutAnyOrigin],
-    num_words: UInt,
+    num_words: UInt32,
 ):
     """Compute popcount of each bitmap word."""
     var gid = Int(block_dim.x) * Int(block_idx.x) + Int(thread_idx.x)
     if gid >= Int(num_words):
         return
-    popcounts[gid] = popcount_fast(bitmap[gid])
+    popcounts[unsafe_offset=gid] = popcount_fast(bitmap[unsafe_offset=gid])
 
 
 # ===== Kernel 2: Parallel block-local exclusive prefix sum =====
@@ -52,7 +52,7 @@ def prefix_sum_kernel(
     input_data: UnsafePointer[UInt32, MutAnyOrigin],
     output_prefix: UnsafePointer[UInt32, MutAnyOrigin],
     block_totals: UnsafePointer[UInt32, MutAnyOrigin],
-    num_elements: UInt,
+    num_elements: UInt32,
 ):
     """Compute a per-block exclusive prefix sum using `block.prefix_sum`.
 
@@ -68,21 +68,21 @@ def prefix_sum_kernel(
 
     var val: UInt32 = 0
     if gid < Int(num_elements):
-        val = input_data[gid]
+        val = input_data[unsafe_offset=gid]
 
     var prefix = block.prefix_sum[exclusive=True, block_size=BLOCK_SIZE_OPT](
         val
     )
 
     if gid < Int(num_elements):
-        output_prefix[gid] = prefix
+        output_prefix[unsafe_offset=gid] = prefix
 
     # Last active thread in this block writes the block total.
     var block_end = min((bid + 1) * Int(block_dim.x), Int(num_elements))
     var last_in_block = block_end - 1 - bid * Int(block_dim.x)
 
     if tid == last_in_block:
-        block_totals[bid] = prefix + val
+        block_totals[unsafe_offset=bid] = prefix + val
 
 
 # ===== Kernel 3: Add block offsets to prefix sums =====
@@ -94,7 +94,7 @@ def prefix_sum_kernel(
 def add_block_offsets_kernel(
     prefix_sums: UnsafePointer[UInt32, MutAnyOrigin],
     block_offsets: UnsafePointer[UInt32, MutAnyOrigin],
-    num_elements: UInt,
+    num_elements: UInt32,
 ):
     """Add block offset to each element's prefix sum."""
     var tid = Int(thread_idx.x)
@@ -106,7 +106,10 @@ def add_block_offsets_kernel(
 
     # Skip first block (offset is 0)
     if block_id > 0:
-        prefix_sums[gid] = prefix_sums[gid] + block_offsets[block_id]
+        prefix_sums[unsafe_offset=gid] = (
+            prefix_sums[unsafe_offset=gid]
+            + block_offsets[unsafe_offset=block_id]
+        )
 
 
 def _ctz32_gpu(value: UInt32) -> UInt32:
@@ -155,7 +158,7 @@ def _compute_block_prefix_sums(
             d_block_totals_ptr,
             d_block_prefix_ptr,
             d_dummy.unsafe_ptr(),
-            UInt(num_blocks),
+            UInt32(num_blocks),
             grid_dim=1,
             block_dim=BLOCK_SIZE_OPT,
         )
@@ -174,7 +177,7 @@ def _compute_block_prefix_sums(
         d_block_totals_ptr,
         d_block_prefix_ptr,
         d_block_totals_l1.unsafe_ptr(),
-        UInt(num_blocks),
+        UInt32(num_blocks),
         grid_dim=num_blocks_l1,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -196,7 +199,7 @@ def _compute_block_prefix_sums(
     ctx.enqueue_function[add_block_offsets_kernel](
         d_block_prefix_ptr,
         d_block_prefix_l1.unsafe_ptr(),
-        UInt(num_blocks),
+        UInt32(num_blocks),
         grid_dim=num_blocks_l1,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -223,7 +226,7 @@ def extract_positions_gpu_lean(
     ctx.enqueue_function[popcount_kernel](
         d_bitmap_ptr,
         d_popcounts.unsafe_ptr(),
-        UInt(num_words),
+        UInt32(num_words),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -236,7 +239,7 @@ def extract_positions_gpu_lean(
         d_popcounts.unsafe_ptr(),
         d_prefix.unsafe_ptr(),
         d_block_totals.unsafe_ptr(),
-        UInt(num_words),
+        UInt32(num_words),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -249,7 +252,7 @@ def extract_positions_gpu_lean(
         )
         ctx.enqueue_copy(h_block_totals, d_block_totals)
         ctx.synchronize()
-        total_count = Int(h_block_totals.unsafe_ptr()[0])
+        total_count = Int(h_block_totals.unsafe_ptr()[unsafe_offset=0])
     else:
         var d_block_prefix = ctx.enqueue_create_buffer[DType.uint32](num_blocks)
         d_block_prefix.enqueue_fill(0)
@@ -264,7 +267,7 @@ def extract_positions_gpu_lean(
         ctx.enqueue_function[add_block_offsets_kernel](
             d_prefix.unsafe_ptr(),
             d_block_prefix.unsafe_ptr(),
-            UInt(num_words),
+            UInt32(num_words),
             grid_dim=num_blocks,
             block_dim=BLOCK_SIZE_OPT,
         )
@@ -279,9 +282,9 @@ def extract_positions_gpu_lean(
         ctx.enqueue_copy(h_block_totals, d_block_totals)
         ctx.enqueue_copy(h_block_prefix, d_block_prefix)
         ctx.synchronize()
-        total_count = Int(h_block_prefix.unsafe_ptr()[num_blocks - 1]) + Int(
-            h_block_totals.unsafe_ptr()[num_blocks - 1]
-        )
+        total_count = Int(
+            h_block_prefix.unsafe_ptr()[unsafe_offset=num_blocks - 1]
+        ) + Int(h_block_totals.unsafe_ptr()[unsafe_offset=num_blocks - 1])
 
     if total_count == 0:
         return List[Int32]()
@@ -293,8 +296,8 @@ def extract_positions_gpu_lean(
         d_bitmap_ptr,
         d_prefix.unsafe_ptr(),
         d_positions.unsafe_ptr(),
-        UInt(num_words),
-        UInt(max_byte_pos),
+        UInt32(num_words),
+        UInt32(max_byte_pos),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -305,7 +308,7 @@ def extract_positions_gpu_lean(
 
     var positions = List[Int32](capacity=total_count)
     positions.resize(total_count, 0)
-    memcpy(
+    unsafe_memcpy(
         dest=positions.unsafe_ptr(),
         src=h_positions.unsafe_ptr(),
         count=total_count,
@@ -323,8 +326,8 @@ def scatter_positions_lean_kernel(
     bitmap: UnsafePointer[UInt32, MutAnyOrigin],
     prefix_offsets: UnsafePointer[UInt32, MutAnyOrigin],
     output_positions: UnsafePointer[Int32, MutAnyOrigin],
-    num_words: UInt,
-    max_byte_pos: UInt,
+    num_words: UInt32,
+    max_byte_pos: UInt32,
 ):
     """Scatter set-bit byte positions out of a 32-bit-per-word bitmap.
 
@@ -337,19 +340,19 @@ def scatter_positions_lean_kernel(
     if gid >= Int(num_words):
         return
 
-    var bits = bitmap[gid]
+    var bits = bitmap[unsafe_offset=gid]
     if bits == 0:
         return
 
     var base_pos = gid * 32
-    var write_idx = Int(prefix_offsets[gid])
+    var write_idx = Int(prefix_offsets[unsafe_offset=gid])
 
     while bits != 0:
         var tz = _ctz32_gpu(bits)
         var pos = base_pos + Int(tz)
 
         if pos < Int(max_byte_pos):
-            output_positions[write_idx] = Int32(pos)
+            output_positions[unsafe_offset=write_idx] = Int32(pos)
             write_idx += 1
 
         bits = bits & (bits - 1)

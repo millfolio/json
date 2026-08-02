@@ -16,7 +16,7 @@ def test_stream_compact_simple() raises:
     # Word 0: bit 0, bit 5 -> 0b00100001 = 33
     var num_words = 1
     var h_bitmap = ctx.enqueue_create_host_buffer[DType.uint32](num_words)
-    h_bitmap.unsafe_ptr().init_pointee_copy(33)  # bits 0 and 5 set
+    h_bitmap.unsafe_ptr().unsafe_write(33)  # bits 0 and 5 set
 
     var d_bitmap = ctx.enqueue_create_buffer[DType.uint32](num_words)
     ctx.enqueue_copy(d_bitmap, h_bitmap)
@@ -42,9 +42,13 @@ def test_stream_compact_multiple_words() raises:
     # Create bitmap with positions in multiple words
     var num_words = 3
     var h_bitmap = ctx.enqueue_create_host_buffer[DType.uint32](num_words)
-    h_bitmap.unsafe_ptr().init_pointee_copy(1)  # bit 0 -> position 0
-    (h_bitmap.unsafe_ptr() + 1).init_pointee_copy(1)  # bit 0 -> position 32
-    (h_bitmap.unsafe_ptr() + 2).init_pointee_copy(32)  # bit 5 -> position 69
+    h_bitmap.unsafe_ptr().unsafe_write(1)  # bit 0 -> position 0
+    (h_bitmap.unsafe_ptr().unsafe_offset(1)).unsafe_write(
+        1
+    )  # bit 0 -> position 32
+    (h_bitmap.unsafe_ptr().unsafe_offset(2)).unsafe_write(
+        32
+    )  # bit 5 -> position 69
 
     var d_bitmap = ctx.enqueue_create_buffer[DType.uint32](num_words)
     ctx.enqueue_copy(d_bitmap, h_bitmap)
@@ -70,10 +74,10 @@ def test_stream_compact_empty() raises:
 
     var num_words = 4
     var h_bitmap = ctx.enqueue_create_host_buffer[DType.uint32](num_words)
-    h_bitmap.unsafe_ptr().init_pointee_copy(0)
-    (h_bitmap.unsafe_ptr() + 1).init_pointee_copy(0)
-    (h_bitmap.unsafe_ptr() + 2).init_pointee_copy(0)
-    (h_bitmap.unsafe_ptr() + 3).init_pointee_copy(0)
+    h_bitmap.unsafe_ptr().unsafe_write(0)
+    (h_bitmap.unsafe_ptr().unsafe_offset(1)).unsafe_write(0)
+    (h_bitmap.unsafe_ptr().unsafe_offset(2)).unsafe_write(0)
+    (h_bitmap.unsafe_ptr().unsafe_offset(3)).unsafe_write(0)
 
     var d_bitmap = ctx.enqueue_create_buffer[DType.uint32](num_words)
     ctx.enqueue_copy(d_bitmap, h_bitmap)
@@ -96,7 +100,7 @@ def test_stream_compact_all_set() raises:
 
     var num_words = 1
     var h_bitmap = ctx.enqueue_create_host_buffer[DType.uint32](num_words)
-    h_bitmap.unsafe_ptr().init_pointee_copy(0xFFFFFFFF)  # All 32 bits set
+    h_bitmap.unsafe_ptr().unsafe_write(0xFFFFFFFF)  # All 32 bits set
 
     var d_bitmap = ctx.enqueue_create_buffer[DType.uint32](num_words)
     ctx.enqueue_copy(d_bitmap, h_bitmap)
@@ -128,7 +132,7 @@ def test_stream_compact_large() raises:
 
     # Set bit 0 in every word -> 1024 positions
     for i in range(num_words):
-        (h_bitmap.unsafe_ptr() + i).init_pointee_copy(1)
+        (h_bitmap.unsafe_ptr().unsafe_offset(i)).unsafe_write(1)
 
     var d_bitmap = ctx.enqueue_create_buffer[DType.uint32](num_words)
     ctx.enqueue_copy(d_bitmap, h_bitmap)

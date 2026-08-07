@@ -18,10 +18,11 @@
 # (and downstream `extract_positions_gpu_lean`) reuses it for the
 # 32-bit-per-word popcount step of the GPU stream compaction.
 
-from std.gpu import thread_idx, block_idx, block_dim, barrier
+from std.gpu import thread_idx, block_idx, block_dim
+from max.gpu.sync import barrier
 from std.gpu.globals import MAX_THREADS_PER_BLOCK_METADATA
-from std.gpu.host import DeviceContext
-from std.gpu.memory import AddressSpace
+from max.gpu.host import DeviceContext
+from max.gpu.memory import AddressSpace
 from std.memory import UnsafePointer
 from std.utils.static_tuple import StaticTuple
 from ..types import (
@@ -58,12 +59,12 @@ def popcount_fast(value: UInt32) -> UInt32:
     )
 )
 def fused_json_kernel(
-    input_data: UnsafePointer[UInt8, MutAnyOrigin],
-    output_structural: UnsafePointer[UInt32, MutAnyOrigin],
-    output_open_close: UnsafePointer[UInt32, MutAnyOrigin],
-    quote_prefix_in: UnsafePointer[UInt32, MutAnyOrigin],
-    size: UInt32,
-    total_padded_32: UInt32,
+    input_data: Pointer[UInt8, ImmutAnyOrigin],
+    output_structural: Pointer[UInt32, MutAnyOrigin],
+    output_open_close: Pointer[UInt32, MutAnyOrigin],
+    quote_prefix_in: Pointer[UInt32, MutAnyOrigin],
+    size_arg: UInt32,
+    total_padded_32_arg: UInt32,
 ):
     """Walk 32 input bytes per thread; emit raw `{}[]:,` and `{}[]` bitmaps.
 
@@ -97,6 +98,8 @@ def fused_json_kernel(
     GPU escape implementation can drop in here without changing the
     call site.
     """
+    var size = UInt(size_arg)
+    var total_padded_32 = UInt(total_padded_32_arg)
     var thread_id = Int(thread_idx.x)
     var block_id = Int(block_idx.x)
     var global_id = block_id * Int(block_dim.x) + thread_id

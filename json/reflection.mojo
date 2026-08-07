@@ -79,8 +79,8 @@ comptime _OPT_LIST_STRING_NAME = reflect[Optional[List[String]]].name()
 comptime _LIST_LIST_INT_NAME = reflect[List[List[Int]]].name()
 comptime _LIST_LIST_STRING_NAME = reflect[List[List[String]]].name()
 
-comptime _Base = ImplicitlyDeletable & Movable
-comptime _JsonStruct = Defaultable & Movable & ImplicitlyDeletable
+comptime _Base = Deinitable & Movable
+comptime _JsonStruct = Defaultable & Movable & Deinitable
 
 
 # ===================================================================
@@ -326,8 +326,8 @@ def _ser[T: AnyType](value: T) raises -> String:
         return _ser_list_list_string(rebind[List[List[String]]](value))
     elif reflect[T].is_struct():
         comptime if conforms_to(T, JsonSerializable):
-            ref custom = trait_downcast[JsonSerializable](value)
-            var val = custom.to_json_value()
+            # `T` is refined to JsonSerializable inside this guard
+            var val = value.to_json_value()
             return _ser_value(val)
         else:
             return _ser_struct[T](value)
@@ -594,8 +594,9 @@ def _deser_fill[T: AnyType](mut result: T, json: Value) raises:
         comptime field_type_name = reflect[field_type].name()
         var key = String(field_name)
 
-        ref field = trait_downcast[_Base](reflect[T].field_ref[idx](result))
-        var ptr = UnsafePointer(to=field)
+        ref field = reflect[T].field_ref[idx](result)
+        comptime assert conforms_to(type_of(field), _Base)
+        var ptr = Pointer(to=field)
 
         comptime if field_type_name == _STRING_NAME:
             ptr.unsafe_deinit_pointee()

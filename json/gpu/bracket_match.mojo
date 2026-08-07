@@ -6,10 +6,11 @@
 # 3. For opening brackets: depth -= 1 (to match closing bracket's depth)
 # 4. Within each depth, pair opening with next closing
 
-from std.gpu.host import DeviceContext, DeviceBuffer, HostBuffer
-from std.gpu import block_dim, block_idx, thread_idx, barrier
+from max.gpu.host import DeviceContext, DeviceBuffer, HostBuffer
+from std.gpu import block_dim, block_idx, thread_idx
+from max.gpu.sync import barrier
 from std.gpu.globals import MAX_THREADS_PER_BLOCK_METADATA
-from std.gpu.primitives import block
+from max.gpu.primitives import block
 from std.collections import List
 from std.memory import UnsafePointer, unsafe_memcpy
 from std.math import ceildiv
@@ -54,12 +55,13 @@ def brackets_match(open_char: UInt8, close_char: UInt8) -> Bool:
     )
 )
 def compute_depth_delta_kernel(
-    char_types: UnsafePointer[UInt8, MutAnyOrigin],
-    depth_deltas: UnsafePointer[Int32, MutAnyOrigin],
-    n: UInt32,
+    char_types: Pointer[UInt8, MutAnyOrigin],
+    depth_deltas: Pointer[Int32, MutAnyOrigin],
+    n_arg: UInt32,
 ):
     """Compute depth delta for each position: +1 for {[, -1 for }], 0 otherwise.
     """
+    var n = UInt(n_arg)
     var gid = Int(block_dim.x) * Int(block_idx.x) + Int(thread_idx.x)
     if gid >= Int(n):
         return
@@ -81,10 +83,10 @@ def compute_depth_delta_kernel(
     )
 )
 def depth_prefix_sum_kernel(
-    depth_deltas: UnsafePointer[Int32, MutAnyOrigin],
-    depth_prefix: UnsafePointer[Int32, MutAnyOrigin],
-    block_totals: UnsafePointer[Int32, MutAnyOrigin],
-    n: UInt32,
+    depth_deltas: Pointer[Int32, MutAnyOrigin],
+    depth_prefix: Pointer[Int32, MutAnyOrigin],
+    block_totals: Pointer[Int32, MutAnyOrigin],
+    n_arg: UInt32,
 ):
     """Parallel block-local exclusive prefix sum of depth deltas.
 
@@ -96,6 +98,7 @@ def depth_prefix_sum_kernel(
     `_compute_depth_prefix_sum` then aggregates the per-block totals
     across levels.
     """
+    var n = UInt(n_arg)
     var tid = Int(thread_idx.x)
     var bid = Int(block_idx.x)
     var gid = bid * Int(block_dim.x) + tid
@@ -126,11 +129,11 @@ def depth_prefix_sum_kernel(
     )
 )
 def add_depth_offsets_kernel(
-    depth_prefix_excl: UnsafePointer[Int32, MutAnyOrigin],
-    block_offsets: UnsafePointer[Int32, MutAnyOrigin],
-    depth_deltas: UnsafePointer[Int32, MutAnyOrigin],
-    depths_out: UnsafePointer[Int32, MutAnyOrigin],
-    n: UInt32,
+    depth_prefix_excl: Pointer[Int32, MutAnyOrigin],
+    block_offsets: Pointer[Int32, MutAnyOrigin],
+    depth_deltas: Pointer[Int32, MutAnyOrigin],
+    depths_out: Pointer[Int32, MutAnyOrigin],
+    n_arg: UInt32,
 ):
     """Convert block-local exclusive prefix into a global inclusive scan.
 
@@ -141,6 +144,7 @@ def add_depth_offsets_kernel(
 
     Writes the global inclusive depth `depths_out[gid] = sum(deltas[0..=gid])`.
     """
+    var n = UInt(n_arg)
     var bid = Int(block_idx.x)
     var gid = bid * Int(block_dim.x) + Int(thread_idx.x)
 
@@ -161,12 +165,13 @@ def add_depth_offsets_kernel(
     )
 )
 def adjust_open_depths_kernel(
-    char_types: UnsafePointer[UInt8, MutAnyOrigin],
-    depths: UnsafePointer[Int32, MutAnyOrigin],
-    n: UInt32,
+    char_types: Pointer[UInt8, MutAnyOrigin],
+    depths: Pointer[Int32, MutAnyOrigin],
+    n_arg: UInt32,
 ):
     """For opening brackets, subtract 1 from depth so it matches closing bracket.
     """
+    var n = UInt(n_arg)
     var gid = Int(block_dim.x) * Int(block_idx.x) + Int(thread_idx.x)
     if gid >= Int(n):
         return
@@ -183,11 +188,12 @@ def adjust_open_depths_kernel(
     )
 )
 def _shift_in_place_kernel(
-    values: UnsafePointer[Int32, MutAnyOrigin],
-    offsets: UnsafePointer[Int32, MutAnyOrigin],
-    n: UInt32,
+    values: Pointer[Int32, MutAnyOrigin],
+    offsets: Pointer[Int32, MutAnyOrigin],
+    n_arg: UInt32,
 ):
     """values[gid] += offsets[block_idx]."""
+    var n = UInt(n_arg)
     var bid = Int(block_idx.x)
     var gid = bid * Int(block_dim.x) + Int(thread_idx.x)
     if gid >= Int(n):
@@ -200,8 +206,8 @@ def _shift_in_place_kernel(
 # ===== Helper: Exclusive prefix sum over block totals (hierarchical) =====
 def _exclusive_scan_block_totals(
     ctx: DeviceContext,
-    d_block_totals: UnsafePointer[Int32, MutAnyOrigin],
-    d_block_offsets: UnsafePointer[Int32, MutAnyOrigin],
+    d_block_totals: Pointer[Int32, MutAnyOrigin],
+    d_block_offsets: Pointer[Int32, MutAnyOrigin],
     num_blocks: Int,
 ) raises:
     """Compute `d_block_offsets` = exclusive prefix of `d_block_totals`.
@@ -220,7 +226,7 @@ def _exclusive_scan_block_totals(
             d_block_totals,
             d_block_offsets,
             d_dummy.unsafe_ptr(),
-            UInt32(num_blocks),
+            UInt32(UInt(num_blocks)),
             grid_dim=1,
             block_dim=BLOCK_SIZE_OPT,
         )
@@ -237,7 +243,7 @@ def _exclusive_scan_block_totals(
         d_block_totals,
         d_block_offsets,
         d_block_totals_l1.unsafe_ptr(),
-        UInt32(num_blocks),
+        UInt32(UInt(num_blocks)),
         grid_dim=num_blocks_l1,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -257,7 +263,7 @@ def _exclusive_scan_block_totals(
     ctx.enqueue_function[_shift_in_place_kernel](
         d_block_offsets,
         d_block_offsets_l1.unsafe_ptr(),
-        UInt32(num_blocks),
+        UInt32(UInt(num_blocks)),
         grid_dim=num_blocks_l1,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -265,7 +271,7 @@ def _exclusive_scan_block_totals(
 
 def match_brackets_gpu(
     ctx: DeviceContext,
-    d_char_types: UnsafePointer[UInt8, MutAnyOrigin],
+    d_char_types: Pointer[UInt8, MutAnyOrigin],
     n: Int,
 ) raises -> Tuple[List[Int32], List[Int32]]:
     """Match brackets using GPU prefix sum.
@@ -287,7 +293,7 @@ def match_brackets_gpu(
     ctx.enqueue_function[compute_depth_delta_kernel](
         d_char_types,
         d_depth_deltas.unsafe_ptr(),
-        UInt32(n),
+        UInt32(UInt(n)),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -303,7 +309,7 @@ def match_brackets_gpu(
         d_depth_deltas.unsafe_ptr(),
         d_depth_excl.unsafe_ptr(),
         d_block_totals.unsafe_ptr(),
-        UInt32(n),
+        UInt32(UInt(n)),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )
@@ -322,7 +328,7 @@ def match_brackets_gpu(
             d_block_totals.unsafe_ptr(),  # unused but need a valid pointer
             d_depth_deltas.unsafe_ptr(),
             d_depths.unsafe_ptr(),
-            UInt32(n),
+            UInt32(UInt(n)),
             grid_dim=num_blocks,
             block_dim=BLOCK_SIZE_OPT,
         )
@@ -342,7 +348,7 @@ def match_brackets_gpu(
             d_block_offsets.unsafe_ptr(),
             d_depth_deltas.unsafe_ptr(),
             d_depths.unsafe_ptr(),
-            UInt32(n),
+            UInt32(UInt(n)),
             grid_dim=num_blocks,
             block_dim=BLOCK_SIZE_OPT,
         )
@@ -351,7 +357,7 @@ def match_brackets_gpu(
     ctx.enqueue_function[adjust_open_depths_kernel](
         d_char_types,
         d_depths.unsafe_ptr(),
-        UInt32(n),
+        UInt32(UInt(n)),
         grid_dim=num_blocks,
         block_dim=BLOCK_SIZE_OPT,
     )

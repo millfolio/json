@@ -24,11 +24,11 @@ scripts = ["json/cpu/simdjson_ffi/build.sh"]
 # examples, `mojo build`-ing benchmark binaries). The activation hook below
 # compiles the simdjson FFI wrapper on every env activation, so a C++ compiler
 # has to be available here, not gated behind a dev feature.
-mojo = "==1.0.0rc3"
+mojo = "==1.0.0"
 # The `max` Mojo package: std.gpu.{compute,host,memory,sync} moved there in
 # the 1.0 cycle (json/gpu imports max.gpu.host + max.gpu.memory). Keep the
 # rc/version in lockstep with the mojo pin.
-max = "==26.5.0rc3"
+max = "==26.5.0"
 simdjson = ">=4.2.4,<5"
 
 [target.linux-64.dependencies]

@@ -42,7 +42,12 @@ build:
     - cp -r json $PREFIX/lib/mojo/
     # ── simdjson FFI wrapper (loaded at runtime by json) ─────────────────
     - mkdir -p $PREFIX/lib
-    - $CXX -O3 -std=c++17 -fPIC -DNDEBUG -shared
+    # ``-include iterator``: simdjson.h uses ``std::inserter`` without including
+    # <iterator>. Older standard libraries pulled it in transitively; current
+    # libc++ does not, so the header fails to compile on its own (macOS:
+    # "no member named 'inserter' in namespace 'std'"). A no-op where the
+    # transitive include still happens.
+    - $CXX -O3 -std=c++17 -fPIC -DNDEBUG -shared -include iterator
         -o $PREFIX/lib/libsimdjson_wrapper.so
         json/cpu/simdjson_ffi/simdjson_wrapper.cpp
         -I$PREFIX/include
